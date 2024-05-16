@@ -1,0 +1,45 @@
+
+services:
+  postgres:
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      - ./init-database.sh:/docker-entrypoint-initdb.d/init-database.sh
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 5432:5432
+    networks:
+      - mynetwork
+
+  loyality_go:
+    build:
+      context: .
+      dockerfile: dockerfile
+    depends_on:
+      postgres: 
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: clients
+    ports:
+      - "8080:8080"
+    networks:
+      - mynetwork
+
+volumes:
+  postgres:
+        
+networks:
+  mynetwork:
+
