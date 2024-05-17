@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "26dc8ed5-82ba-41da-9b29-23680f521db2",
-		"name": "Users",
+		"_postman_id": "9f0c5869-3401-4d4f-ad03-5089c406f5ca",
+		"name": "Clients",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -37,7 +37,7 @@
 			"response": []
 		},
 		{
-			"name": "getFaceById",
+			"name": "getClientById",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -57,7 +57,7 @@
 			"response": []
 		},
 		{
-			"name": "addFaceByName",
+			"name": "addClient",
 			"request": {
 				"method": "POST",
 				"header": [],
@@ -97,6 +97,55 @@
 					"path": [
 						"faces",
 						"4"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "putById",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/clients/4",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"clients",
+						"4"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "patchClient",
+			"request": {
+				"method": "PATCH",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"foo2\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/clients/1",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"clients",
+						"1"
 					]
 				}
 			},

@@ -46,29 +46,27 @@ func Post(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
-// func Put(dbConnection *sql.DB) gin.HandlerFunc {
-// 	return func(context *gin.Context) {
-// 		query := "INSERT INTO users (id, name) VALUES (nextval('user_seq'), $1)"
-// 		_, err := dbConnection.Exec(query, context.Query("name"))
-// 		if err != nil {
-// 			context.IndentedJSON(http.StatusInternalServerError, response.ClientResponse{Error: err.Error()})
-// 		} else {
-// 			context.IndentedJSON(http.StatusOK, response.ClientResponse{Data: "User added correctly"})
-// 		}
-// 	}
-// }
+func Put(dbConnection *sql.DB) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		err := ExecutePut(dbConnection, context)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+		} else {
+			context.Status(http.StatusOK)
+		}
+	}
+}
 
-// func Patch(dbConnection *sql.DB) gin.HandlerFunc {
-// 	return func(context *gin.Context) {
-// 		query := "INSERT INTO users (id, name) VALUES (nextval('user_seq'), $1)"
-// 		_, err := dbConnection.Exec(query, context.Query("name"))
-// 		if err != nil {
-// 			context.IndentedJSON(http.StatusInternalServerError, response.ClientResponse{Error: err.Error()})
-// 		} else {
-// 			context.IndentedJSON(http.StatusOK, response.ClientResponse{Data: "User added correctly"})
-// 		}
-// 	}
-// }
+func Patch(dbConnection *sql.DB) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		err := ExecutePatch(dbConnection, context)
+		if err != nil {
+			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+		} else {
+			context.Status(http.StatusOK)
+		}
+	}
+}
 
 func Delete(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {

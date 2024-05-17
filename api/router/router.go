@@ -28,8 +28,8 @@ func New() *gin.Engine {
 		clientGroup.GET("", client.GetAll(dbConnection))
 		clientGroup.GET("/:id", client.Get(dbConnection))
 		clientGroup.POST("/", client.Post(dbConnection))
-		// clientGroup.PUT("/:id", client.Put(dbConnection))
-		// clientGroup.PATCH("/:id", client.Patch(dbConnection))
+		clientGroup.PUT("/:id", client.Put(dbConnection))
+		clientGroup.PATCH("/:id", client.Patch(dbConnection))
 		clientGroup.DELETE("/:id", client.Delete(dbConnection))
 	}
 

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,38 +15,33 @@ func GetUsers(dbConnection *sql.DB) ([]Client, error) {
 	}
 	defer results.Close()
 
-	users := []Client{}
+	clients := []Client{}
 	for results.Next() {
-		var user Client
-		err = results.Scan(&user.Id, &user.Name, &user.Email)
+		var client Client
+		err = results.Scan(&client.Id, &client.Name, &client.Email)
 		if err != nil {
 			return nil, err
 		}
-		users = append(users, user)
+		clients = append(clients, client)
 	}
-	return users, nil
+	return clients, nil
 }
 
 func GetClientById(dbConnection *sql.DB, context *gin.Context) (*Client, error) {
 	id := context.Param("id")
-	query := "SELECT * FROM clients WHERE id = $1"
-	results, err := dbConnection.Query(query, id)
+	query := "SELECT id, name, email FROM clients WHERE id = $1"
+	row := dbConnection.QueryRow(query, id)
+
+	var client Client
+	err := row.Scan(&client.Id, &client.Name, &client.Email)
 	if err != nil {
-		fmt.Println("asd")
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("client not found")
+		}
 		return nil, err
 	}
-	defer results.Close()
 
-	user := &Client{}
-	if results.Next() {
-		err = results.Scan(&user.Id, &user.Name, &user.Email)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		return nil, fmt.Errorf("record not found")
-	}
-	return user, nil
+	return &client, nil
 }
 
 func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
@@ -54,14 +50,53 @@ func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
+func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+	id := context.Param("id")
+	var clientUpdate ClientUpdateRequest
+
+	if err := context.BindJSON(&clientUpdate); err != nil {
+		return err
+	}
+
+	updates := map[string]interface{}{
+		"name":  clientUpdate.Name,
+		"email": clientUpdate.Email,
+	}
+
+	query, args := database.BuildUpsertQuery("clients", updates, id)
+
+	_, err := dbConnection.Exec(query, args...)
+	return err
+}
+
+func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+	id := context.Param("id")
+	var clientPatch ClientPatchRequest
+
+	if err := context.BindJSON(&clientPatch); err != nil {
+		return err
+	}
+
+	updates := map[string]interface{}{}
+	if clientPatch.Name != nil {
+		updates["name"] = *clientPatch.Name
+	}
+	if clientPatch.Email != nil {
+		updates["email"] = *clientPatch.Email
+	}
+
+	if len(updates) == 0 {
+		return fmt.Errorf("no fields provided for update")
+	}
+
+	query, args := database.BuildUpdateQuery("clients", updates, id)
+
+	_, err := dbConnection.Exec(query, args...)
+	return err
+}
+
 func ExecuteDelte(dbConnection *sql.DB, context *gin.Context) error {
 	query := "DELETE FROM clients where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
 	return err
 }
-
-// func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
-// 	query := "INSERT INTO users (id, name) VALUES (nextval('user_seq'), $1)"
-// 	_, err := dbConnection.Exec(query, context.Query("name"))
-// 	return err
-// }
