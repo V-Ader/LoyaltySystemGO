@@ -15,7 +15,7 @@ func GetAll(dbConnection *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
-			context.JSON(http.StatusOK, response.ClientResponse{Data: users})
+			context.JSON(http.StatusOK, ClientResponse{Data: users})
 		}
 	}
 }
@@ -30,7 +30,7 @@ func Get(dbConnection *sql.DB) gin.HandlerFunc {
 				context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 			}
 		} else {
-			context.JSON(http.StatusAccepted, response.ClientResponse{Data: &result})
+			context.JSON(http.StatusAccepted, ClientResponse{Data: &result})
 		}
 	}
 }

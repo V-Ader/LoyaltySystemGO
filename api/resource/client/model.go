@@ -6,7 +6,7 @@ type Client struct {
 	Email string `json:"email"`
 }
 
-type ClientUpdateRequest struct {
+type ClientDataRequest struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }

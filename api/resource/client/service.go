@@ -2,11 +2,20 @@ package client
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"time"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/cache"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
+
+var tokenCache *cache.TokenCache
+
+func init() {
+	tokenCache = cache.NewTokenCache(5*time.Minute, 10*time.Minute)
+}
 
 func GetUsers(dbConnection *sql.DB) ([]Client, error) {
 	results, err := dbConnection.Query("SELECT * FROM clients")
@@ -45,14 +54,26 @@ func GetClientById(dbConnection *sql.DB, context *gin.Context) (*Client, error) 
 }
 
 func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+	deduplicationToken := context.Query("deduplicationToken")
+
+	if err := tokenCache.ProcessToken(deduplicationToken); err != nil {
+		return err
+	}
+
+	var clientData ClientDataRequest
+
+	if err := context.BindJSON(&clientData); err != nil {
+		return err
+	}
+
 	query := "INSERT INTO clients (id, name, email) VALUES (nextval('client_seq'), $1, $2)"
-	_, err := dbConnection.Exec(query, context.Query("name"), context.Query("email"))
+	_, err := dbConnection.Exec(query, clientData.Name, clientData.Email)
 	return err
 }
 
 func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
-	var clientUpdate ClientUpdateRequest
+	var clientUpdate ClientDataRequest
 
 	if err := context.BindJSON(&clientUpdate); err != nil {
 		return err
@@ -86,7 +107,7 @@ func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	}
 
 	if len(updates) == 0 {
-		return fmt.Errorf("no fields provided for update")
+		return errors.New("no fields provided for update")
 	}
 
 	query, args := database.BuildUpdateQuery("clients", updates, id)
