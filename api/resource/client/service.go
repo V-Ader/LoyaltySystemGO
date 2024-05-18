@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/cache"
@@ -17,8 +18,37 @@ func init() {
 	tokenCache = cache.NewTokenCache(5*time.Minute, 10*time.Minute)
 }
 
-func GetUsers(dbConnection *sql.DB) ([]Client, error) {
-	results, err := dbConnection.Query("SELECT * FROM clients")
+func extractPagination(context *gin.Context) (int, int) {
+	pageStr := context.Query("page")
+	pageSizeStr := context.Query("pageSize")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 0
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 0 {
+		pageSize = 0
+	}
+
+	return page, pageSize
+}
+
+func GetUsers(dbConnection *sql.DB, context *gin.Context) ([]Client, error) {
+	var query string
+	var args []interface{}
+
+	page, pageSize := extractPagination(context)
+
+	if page > 0 && pageSize > 0 {
+		offset := (page - 1) * pageSize
+		query = "SELECT * FROM clients ORDER BY id LIMIT $1 OFFSET $2"
+		args = []interface{}{pageSize, offset}
+	} else {
+		query = "SELECT * FROM clients ORDER BY id"
+	}
+
+	results, err := dbConnection.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

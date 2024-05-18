@@ -11,7 +11,7 @@ import (
 
 func GetAll(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		users, err := GetUsers(dbConnection)
+		users, err := GetUsers(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
