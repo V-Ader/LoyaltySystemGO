@@ -1,4 +1,4 @@
-package client
+package issuer
 
 import (
 	"database/sql"
@@ -19,12 +19,22 @@ func init() {
 }
 
 func extractPagination(context *gin.Context) (int, int) {
-	page, _ := strconv.Atoi(context.DefaultQuery("page", "1"))
-	pageSize, _ := strconv.Atoi(context.DefaultQuery("pageSize", "10"))
+	pageStr := context.Query("page")
+	pageSizeStr := context.Query("pageSize")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 0
+	}
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 0 {
+		pageSize = 0
+	}
+
 	return page, pageSize
 }
 
-func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Client, error) {
+func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Issuer, error) {
 	var query string
 	var args []interface{}
 
@@ -32,10 +42,10 @@ func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Client, error) {
 
 	if page > 0 && pageSize > 0 {
 		offset := (page - 1) * pageSize
-		query = "SELECT * FROM clients ORDER BY id LIMIT $1 OFFSET $2"
+		query = "SELECT * FROM issuers ORDER BY id LIMIT $1 OFFSET $2"
 		args = []interface{}{pageSize, offset}
 	} else {
-		query = "SELECT * FROM clients ORDER BY id"
+		query = "SELECT * FROM issuers ORDER BY id"
 	}
 
 	results, err := dbConnection.Query(query, args...)
@@ -44,33 +54,33 @@ func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Client, error) {
 	}
 	defer results.Close()
 
-	clients := []Client{}
+	issuers := []Issuer{}
 	for results.Next() {
-		var client Client
-		err = results.Scan(&client.Id, &client.Name, &client.Email)
+		var issuer Issuer
+		err = results.Scan(&issuer.Id, &issuer.Name)
 		if err != nil {
 			return nil, err
 		}
-		clients = append(clients, client)
+		issuers = append(issuers, issuer)
 	}
-	return clients, nil
+	return issuers, nil
 }
 
-func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Client, error) {
+func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Issuer, error) {
 	id := context.Param("id")
-	query := "SELECT id, name, email FROM clients WHERE id = $1"
+	query := "SELECT id, name FROM issuers WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
 
-	var client Client
-	err := row.Scan(&client.Id, &client.Name, &client.Email)
+	var issuer Issuer
+	err := row.Scan(&issuer.Id, &issuer.Name)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("client not found")
+			return nil, fmt.Errorf("issuer not found")
 		}
 		return nil, err
 	}
 
-	return &client, nil
+	return &issuer, nil
 }
 
 func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
@@ -80,31 +90,30 @@ func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 		return err
 	}
 
-	var clientData ClientDataRequest
+	var issuerData IssuerDataRequest
 
-	if err := context.BindJSON(&clientData); err != nil {
+	if err := context.BindJSON(&issuerData); err != nil {
 		return err
 	}
 
-	query := "INSERT INTO clients (id, name, email) VALUES (nextval('client_seq'), $1, $2)"
-	_, err := dbConnection.Exec(query, clientData.Name, clientData.Email)
+	query := "INSERT INTO issuers (id, name) VALUES (nextval('issuer_seq'), $1)"
+	_, err := dbConnection.Exec(query, issuerData.Name)
 	return err
 }
 
 func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
-	var clientUpdate ClientDataRequest
+	var issuerData IssuerDataRequest
 
-	if err := context.BindJSON(&clientUpdate); err != nil {
+	if err := context.BindJSON(&issuerData); err != nil {
 		return err
 	}
 
 	updates := map[string]interface{}{
-		"name":  clientUpdate.Name,
-		"email": clientUpdate.Email,
+		"name": issuerData.Name,
 	}
 
-	query, args := database.BuildUpsertQuery("clients", updates, id)
+	query, args := database.BuildUpsertQuery("issuers", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
 	return err
@@ -112,32 +121,29 @@ func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 
 func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
-	var clientPatch ClientPatchRequest
+	var issuerData IssuerPatchRequest
 
-	if err := context.BindJSON(&clientPatch); err != nil {
+	if err := context.BindJSON(&issuerData); err != nil {
 		return err
 	}
 
 	updates := map[string]interface{}{}
-	if clientPatch.Name != nil {
-		updates["name"] = *clientPatch.Name
-	}
-	if clientPatch.Email != nil {
-		updates["email"] = *clientPatch.Email
+	if issuerData.Name != nil {
+		updates["name"] = *issuerData.Name
 	}
 
 	if len(updates) == 0 {
 		return errors.New("no fields provided for update")
 	}
 
-	query, args := database.BuildUpdateQuery("clients", updates, id)
+	query, args := database.BuildUpdateQuery("issuers", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
 	return err
 }
 
 func ExecuteDelte(dbConnection *sql.DB, context *gin.Context) error {
-	query := "DELETE FROM clients where id = $1"
+	query := "DELETE FROM issuers where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
 	return err
 }
