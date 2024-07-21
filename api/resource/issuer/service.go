@@ -142,7 +142,7 @@ func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecuteDelte(dbConnection *sql.DB, context *gin.Context) error {
+func ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
 	query := "DELETE FROM issuers where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
 	return err

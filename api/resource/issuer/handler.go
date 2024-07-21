@@ -30,6 +30,7 @@ func Get(dbConnection *sql.DB) gin.HandlerFunc {
 				context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 			}
 		} else {
+			context.Header("ETag", result.getHash())
 			context.JSON(http.StatusAccepted, IssuerResponse{Data: &result})
 		}
 	}
@@ -46,14 +47,31 @@ func Post(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
+func CheckIfMatch(context *gin.Context, entity *Issuer) bool {
+	ifMatchCondition := context.GetHeader("If-Match")
+	return ifMatchCondition == entity.getHash()
+}
+
 func Put(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		err := ExecutePut(dbConnection, context)
+		entity, err := ExecutGetById(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
-		} else {
-			context.Status(http.StatusOK)
+			return
 		}
+
+		if !CheckIfMatch(context, entity) {
+			context.JSON(http.StatusPreconditionFailed, response.ErrorResponse{Message: "If-Match does not match ETag"})
+			return
+		}
+
+		err = ExecutePut(dbConnection, context)
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			return
+		}
+
+		context.Status(http.StatusOK)
 	}
 }
 
@@ -70,7 +88,7 @@ func Patch(dbConnection *sql.DB) gin.HandlerFunc {
 
 func Delete(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		err := ExecuteDelte(dbConnection, context)
+		err := ExecuteDelete(dbConnection, context)
 		if err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
