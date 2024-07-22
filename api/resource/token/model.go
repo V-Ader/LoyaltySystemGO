@@ -1,7 +1,7 @@
 package token
 
 type Token struct {
-	Id int `json: "id"`
+	Id int `json:"id"`
 }
 
 type TokenResponse struct {

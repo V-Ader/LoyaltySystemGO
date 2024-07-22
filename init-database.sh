@@ -48,4 +48,23 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
     INSERT INTO issuers(id, name)
     VALUES (nextval('issuer_seq'), 'Ghi');
+
+    
+    CREATE SEQUENCE card_seq START 1;
+
+    CREATE TABLE cards (
+        id serial PRIMARY KEY,
+        issuer_id integer NOT NULL,
+        owner_id integer NOT NULL,
+        active boolean NOT NULL,
+        usages integer NOT NULL,
+        capacity integer NOT NULL
+    );
+
+    INSERT INTO cards (id, issuer_id, owner_id, active, usages, capacity)
+    VALUES (nextval('card_seq'), 1, 1, TRUE, 10, 15);
+
+    INSERT INTO cards (id, issuer_id, owner_id, active, usages, capacity)
+    VALUES (nextval('card_seq'), 1, 2, TRUE, 2, 10);
+
 EOSQL
