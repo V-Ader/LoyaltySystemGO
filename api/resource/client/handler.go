@@ -88,7 +88,7 @@ func Patch(dbConnection *sql.DB) gin.HandlerFunc {
 
 func Delete(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		err := ExecuteDelte(dbConnection, context)
+		err := ExecuteDelete(dbConnection, context)
 		if err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
