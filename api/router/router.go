@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/card"
+
 	"github.com/V-Ader/Loyality_GO/api/resource/client"
 	"github.com/V-Ader/Loyality_GO/api/resource/issuer"
 
@@ -53,6 +54,14 @@ func New() *gin.Engine {
 		cardGroup.PUT("/:id", card.Put(dbConnection))
 		cardGroup.PATCH("/:id", card.Patch(dbConnection))
 		cardGroup.DELETE("/:id", card.Delete(dbConnection))
+	}
+
+	tokenGroup := router.Group("tokens")
+	{
+		tokenGroup.POST("/clients", client.Token(dbConnection))
+		tokenGroup.POST("/cards", card.Token(dbConnection))
+		tokenGroup.POST("/issuers", issuer.Token(dbConnection))
+
 	}
 
 	return router

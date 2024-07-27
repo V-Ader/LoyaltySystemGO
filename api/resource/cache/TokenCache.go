@@ -1,32 +1,75 @@
 package cache
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/patrickmn/go-cache"
+	mapset "github.com/deckarep/golang-set"
 )
 
 type TokenCache struct {
-	cache *cache.Cache
+	cache mapset.Set
 	mutex sync.Mutex
 }
 
 func NewTokenCache(defaultExpiration time.Duration, cleanupInterval time.Duration) *TokenCache {
 	return &TokenCache{
-		cache: cache.New(defaultExpiration, cleanupInterval),
+		cache: mapset.NewSet(),
 	}
 }
 
-func (dc *TokenCache) ProcessToken(token string) error {
-	dc.mutex.Lock()
-	defer dc.mutex.Unlock()
+func (tc *TokenCache) CreateToken() (string, error) {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
 
-	if _, found := dc.cache.Get(token); found {
-		return errors.New("duplicate request: this deduplication token has already been used")
+	token, err := generateUniqueToken(tc)
+	if err != nil {
+		return "", err
 	}
 
-	dc.cache.Set(token, true, cache.DefaultExpiration)
+	tc.cache.Add(token)
+	fmt.Printf("Token %s added\n", token)
+	return token, nil
+}
+
+func generateUniqueToken(tc *TokenCache) (string, error) {
+	var token string
+	var err error
+	for {
+		token, err = generateRandomToken(16)
+		if err != nil {
+			return "", err
+		}
+		if !tc.cache.Contains(token) {
+			break
+		}
+	}
+	return token, nil
+}
+
+func (tc *TokenCache) RemoveToken(token string) error {
+	tc.mutex.Lock()
+	defer tc.mutex.Unlock()
+
+	if !tc.cache.Contains(token) {
+		return errors.New("token not found in cache")
+	}
+
+	tc.cache.Remove(token)
+	fmt.Printf("Token %s removed\n", token)
+
 	return nil
+}
+
+func generateRandomToken(length int) (string, error) {
+	bytes := make([]byte, length)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
 }

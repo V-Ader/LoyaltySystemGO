@@ -3,11 +3,32 @@ package client
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/cache"
 	"github.com/V-Ader/Loyality_GO/api/resource/response"
 
 	"github.com/gin-gonic/gin"
 )
+
+var (
+	tokenCache *cache.TokenCache
+)
+
+func init() {
+	tokenCache = cache.NewTokenCache(5*time.Minute, 10*time.Minute)
+}
+
+func Token(dbConnection *sql.DB) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		token, err := tokenCache.CreateToken()
+		if err != nil {
+			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+		} else {
+			context.JSON(http.StatusOK, response.Response{Data: token})
+		}
+	}
+}
 
 func GetAll(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
@@ -15,7 +36,7 @@ func GetAll(dbConnection *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
-			context.JSON(http.StatusOK, ClientResponse{Data: users})
+			context.JSON(http.StatusOK, response.Response{Data: users})
 		}
 	}
 }
@@ -31,14 +52,19 @@ func Get(dbConnection *sql.DB) gin.HandlerFunc {
 			}
 		} else {
 			context.Header("ETag", result.getHash())
-			context.JSON(http.StatusOK, ClientResponse{Data: &result})
+			context.JSON(http.StatusOK, response.Response{Data: &result})
 		}
 	}
 }
 
 func Post(dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		err := ExecutePost(dbConnection, context)
+		err := tokenCache.RemoveToken(context.Query("token"))
+		if err != nil {
+			context.JSON(http.StatusPreconditionFailed, response.ErrorResponse{Message: "ivalid token provided"})
+			return
+		}
+		err = ExecutePost(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {

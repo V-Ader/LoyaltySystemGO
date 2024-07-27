@@ -5,18 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"time"
 
-	"github.com/V-Ader/Loyality_GO/api/resource/cache"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
-
-var tokenCache *cache.TokenCache
-
-func init() {
-	tokenCache = cache.NewTokenCache(5*time.Minute, 10*time.Minute)
-}
 
 func extractPagination(context *gin.Context) (int, int) {
 	pageStr := context.Query("page")
@@ -84,12 +76,6 @@ func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Issuer, error) 
 }
 
 func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
-	deduplicationToken := context.Query("deduplicationToken")
-
-	if err := tokenCache.ProcessToken(deduplicationToken); err != nil {
-		return err
-	}
-
 	var issuerData IssuerDataRequest
 
 	if err := context.BindJSON(&issuerData); err != nil {

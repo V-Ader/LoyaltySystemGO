@@ -9,12 +9,6 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
     \c loyality_cards;
     
-    CREATE SEQUENCE token_seq START 1;
-
-    CREATE TABLE tokens (
-        id serial PRIMARY KEY
-    );
-
     CREATE SEQUENCE client_seq START 1;
 
     CREATE TABLE clients (
