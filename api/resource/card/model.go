@@ -15,7 +15,7 @@ type Card struct {
 	Capacity  int  `json:"capacity"`
 }
 
-func (card *Card) getHash() string {
+func (card *Card) GetHash() string {
 	return common.GenerateETag([]byte(fmt.Sprintf("%v", card)))
 }
 

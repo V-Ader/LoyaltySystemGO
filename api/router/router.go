@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 
+	"github.com/V-Ader/Loyality_GO/api/handler"
 	"github.com/V-Ader/Loyality_GO/api/resource/card"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/client"
@@ -26,42 +27,42 @@ func New() *gin.Engine {
 		return nil
 	}
 
+	clientService := &client.ClientService{}
 	clientGroup := router.Group("clients")
 	{
-		clientGroup.GET("", client.GetAll(dbConnection))
-		clientGroup.GET("/:id", client.Get(dbConnection))
-		clientGroup.POST("/", client.Post(dbConnection))
-		clientGroup.PUT("/:id", client.Put(dbConnection))
-		clientGroup.PATCH("/:id", client.Patch(dbConnection))
-		clientGroup.DELETE("/:id", client.Delete(dbConnection))
+		clientGroup.GET("", handler.GetAll(clientService, dbConnection))
+		clientGroup.GET("/:id", handler.Get(clientService, dbConnection))
+		clientGroup.POST("/", handler.Post(clientService, dbConnection))
+		clientGroup.PUT("/:id", handler.Put(clientService, dbConnection))
+		clientGroup.PATCH("/:id", handler.Patch(clientService, dbConnection))
+		clientGroup.DELETE("/:id", handler.Delete(clientService, dbConnection))
 	}
 
+	IssuerService := &issuer.IssuerService{}
 	issuerGroup := router.Group("issuers")
 	{
-		issuerGroup.GET("", issuer.GetAll(dbConnection))
-		issuerGroup.GET("/:id", issuer.Get(dbConnection))
-		issuerGroup.POST("/", issuer.Post(dbConnection))
-		issuerGroup.PUT("/:id", issuer.Put(dbConnection))
-		issuerGroup.PATCH("/:id", issuer.Patch(dbConnection))
-		issuerGroup.DELETE("/:id", issuer.Delete(dbConnection))
+		issuerGroup.GET("", handler.GetAll(IssuerService, dbConnection))
+		issuerGroup.GET("/:id", handler.Get(IssuerService, dbConnection))
+		issuerGroup.POST("/", handler.Post(IssuerService, dbConnection))
+		issuerGroup.PUT("/:id", handler.Put(IssuerService, dbConnection))
+		issuerGroup.PATCH("/:id", handler.Patch(IssuerService, dbConnection))
+		issuerGroup.DELETE("/:id", handler.Delete(IssuerService, dbConnection))
 	}
 
+	cardService := &card.CardService{}
 	cardGroup := router.Group("cards")
 	{
-		cardGroup.GET("", card.GetAll(dbConnection))
-		cardGroup.GET("/:id", card.Get(dbConnection))
-		cardGroup.POST("/", card.Post(dbConnection))
-		cardGroup.PUT("/:id", card.Put(dbConnection))
-		cardGroup.PATCH("/:id", card.Patch(dbConnection))
-		cardGroup.DELETE("/:id", card.Delete(dbConnection))
+		cardGroup.GET("", handler.GetAll(cardService, dbConnection))
+		cardGroup.GET("/:id", handler.Get(cardService, dbConnection))
+		cardGroup.POST("/", handler.Post(cardService, dbConnection))
+		cardGroup.PUT("/:id", handler.Put(cardService, dbConnection))
+		cardGroup.PATCH("/:id", handler.Patch(cardService, dbConnection))
+		cardGroup.DELETE("/:id", handler.Delete(cardService, dbConnection))
 	}
 
 	tokenGroup := router.Group("tokens")
 	{
-		tokenGroup.POST("/clients", client.Token(dbConnection))
-		tokenGroup.POST("/cards", card.Token(dbConnection))
-		tokenGroup.POST("/issuers", issuer.Token(dbConnection))
-
+		tokenGroup.POST("/", handler.Token(dbConnection))
 	}
 
 	return router

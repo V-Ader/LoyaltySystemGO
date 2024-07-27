@@ -11,7 +11,7 @@ type Issuer struct {
 	Name string `json:"name"`
 }
 
-func (client *Issuer) getHash() string {
+func (client *Issuer) GetHash() string {
 	return common.GenerateETag([]byte(fmt.Sprintf("%v", client)))
 }
 

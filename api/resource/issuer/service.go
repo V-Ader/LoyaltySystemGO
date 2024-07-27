@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
+
+type IssuerService struct{}
 
 func extractPagination(context *gin.Context) (int, int) {
 	pageStr := context.Query("page")
@@ -26,7 +29,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Issuer, error) {
+func (s *IssuerService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
 	var query string
 	var args []interface{}
 
@@ -46,19 +49,19 @@ func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Issuer, error) {
 	}
 	defer results.Close()
 
-	issuers := []Issuer{}
+	issuers := []common.Entity{}
 	for results.Next() {
 		var issuer Issuer
 		err = results.Scan(&issuer.Id, &issuer.Name)
 		if err != nil {
 			return nil, err
 		}
-		issuers = append(issuers, issuer)
+		issuers = append(issuers, &issuer)
 	}
 	return issuers, nil
 }
 
-func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Issuer, error) {
+func (s *IssuerService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
 	id := context.Param("id")
 	query := "SELECT id, name FROM issuers WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -75,7 +78,7 @@ func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Issuer, error) 
 	return &issuer, nil
 }
 
-func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	var issuerData IssuerDataRequest
 
 	if err := context.BindJSON(&issuerData); err != nil {
@@ -87,7 +90,7 @@ func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
 	var issuerData IssuerDataRequest
 
@@ -105,7 +108,7 @@ func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
 	var issuerData IssuerPatchRequest
 
@@ -128,7 +131,7 @@ func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
 	query := "DELETE FROM issuers where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
 	return err

@@ -1,4 +1,4 @@
-package card
+package handler
 
 import (
 	"database/sql"
@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/cache"
+	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	"github.com/V-Ader/Loyality_GO/api/resource/response"
+	"github.com/V-Ader/Loyality_GO/api/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -30,9 +32,9 @@ func Token(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func GetAll(dbConnection *sql.DB) gin.HandlerFunc {
+func GetAll(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		users, err := ExecutGet(dbConnection, context)
+		users, err := service.ExecutGet(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
@@ -41,9 +43,9 @@ func GetAll(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func Get(dbConnection *sql.DB) gin.HandlerFunc {
+func Get(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		result, err := ExecutGetById(dbConnection, context)
+		result, err := service.ExecutGetById(dbConnection, context)
 		if err != nil {
 			if err.Error() == "record not found" {
 				context.JSON(http.StatusNotFound, response.ErrorResponse{Message: err.Error()})
@@ -51,20 +53,20 @@ func Get(dbConnection *sql.DB) gin.HandlerFunc {
 				context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 			}
 		} else {
-			context.Header("ETag", result.getHash())
+			context.Header("ETag", result.GetHash())
 			context.JSON(http.StatusOK, response.Response{Data: &result})
 		}
 	}
 }
 
-func Post(dbConnection *sql.DB) gin.HandlerFunc {
+func Post(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		err := tokenCache.RemoveToken(context.Query("token"))
 		if err != nil {
 			context.JSON(http.StatusPreconditionFailed, response.ErrorResponse{Message: "ivalid token provided"})
 			return
 		}
-		err = ExecutePost(dbConnection, context)
+		err = service.ExecutePost(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
@@ -73,14 +75,14 @@ func Post(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func CheckIfMatch(context *gin.Context, entity *Card) bool {
+func CheckIfMatch(context *gin.Context, entity common.Entity) bool {
 	ifMatchCondition := context.GetHeader("If-Match")
-	return ifMatchCondition == entity.getHash()
+	return ifMatchCondition == entity.GetHash()
 }
 
-func Put(dbConnection *sql.DB) gin.HandlerFunc {
+func Put(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		entity, err := ExecutGetById(dbConnection, context)
+		entity, err := service.ExecutGetById(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 			return
@@ -91,7 +93,7 @@ func Put(dbConnection *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		err = ExecutePut(dbConnection, context)
+		err = service.ExecutePut(dbConnection, context)
 		if err != nil {
 			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 			return
@@ -101,9 +103,9 @@ func Put(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func Patch(dbConnection *sql.DB) gin.HandlerFunc {
+func Patch(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		err := ExecutePatch(dbConnection, context)
+		err := service.ExecutePatch(dbConnection, context)
 		if err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {
@@ -112,9 +114,9 @@ func Patch(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func Delete(dbConnection *sql.DB) gin.HandlerFunc {
+func Delete(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
-		err := ExecuteDelete(dbConnection, context)
+		err := service.ExecuteDelete(dbConnection, context)
 		if err != nil {
 			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
 		} else {

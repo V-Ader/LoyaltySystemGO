@@ -12,7 +12,7 @@ type Client struct {
 	Email string `json:"email"`
 }
 
-func (client *Client) getHash() string {
+func (client *Client) GetHash() string {
 	return common.GenerateETag([]byte(fmt.Sprintf("%v", client)))
 }
 

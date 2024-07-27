@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
+
+type CardService struct{}
 
 func extractPagination(context *gin.Context) (int, int) {
 	page, _ := strconv.Atoi(context.DefaultQuery("page", "1"))
@@ -16,7 +19,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Card, error) {
+func (s *CardService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
 	var query string
 	var args []interface{}
 
@@ -36,19 +39,19 @@ func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Card, error) {
 	}
 	defer results.Close()
 
-	cards := []Card{}
+	cards := []common.Entity{}
 	for results.Next() {
 		var card Card
 		err = results.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Usages, &card.Capacity)
 		if err != nil {
 			return nil, err
 		}
-		cards = append(cards, card)
+		cards = append(cards, &card)
 	}
 	return cards, nil
 }
 
-func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Card, error) {
+func (s *CardService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
 	id := context.Param("id")
 	query := "SELECT * FROM cards WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -65,7 +68,7 @@ func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Card, error) {
 	return &card, nil
 }
 
-func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	var cardData CardDataRequest
 
 	if err := context.BindJSON(&cardData); err != nil {
@@ -77,7 +80,7 @@ func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
 	var cardUpdate CardDataRequest
 
@@ -99,7 +102,7 @@ func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
 	var cardPatch CardPatchRequest
 
@@ -134,7 +137,7 @@ func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
 	query := "DELETE FROM cards where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
 	return err

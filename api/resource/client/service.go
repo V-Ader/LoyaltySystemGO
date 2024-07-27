@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
+
+type ClientService struct{}
 
 func extractPagination(context *gin.Context) (int, int) {
 	page, _ := strconv.Atoi(context.DefaultQuery("page", "1"))
@@ -16,7 +19,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Client, error) {
+func (s *ClientService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
 	var query string
 	var args []interface{}
 
@@ -36,19 +39,19 @@ func ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]Client, error) {
 	}
 	defer results.Close()
 
-	clients := []Client{}
+	clients := []common.Entity{}
 	for results.Next() {
 		var client Client
 		err = results.Scan(&client.Id, &client.Name, &client.Email)
 		if err != nil {
 			return nil, err
 		}
-		clients = append(clients, client)
+		clients = append(clients, &client)
 	}
 	return clients, nil
 }
 
-func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Client, error) {
+func (s *ClientService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
 	id := context.Param("id")
 	query := "SELECT id, name, email FROM clients WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -65,7 +68,7 @@ func ExecutGetById(dbConnection *sql.DB, context *gin.Context) (*Client, error) 
 	return &client, nil
 }
 
-func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	var clientData ClientDataRequest
 
 	if err := context.BindJSON(&clientData); err != nil {
@@ -77,7 +80,7 @@ func ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
 	var clientUpdate ClientDataRequest
 
@@ -96,7 +99,7 @@ func ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	id := context.Param("id")
 	var clientPatch ClientPatchRequest
 
@@ -122,7 +125,7 @@ func ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
 	return err
 }
 
-func ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
 	query := "DELETE FROM clients where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
 	return err
