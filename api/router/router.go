@@ -5,6 +5,7 @@ import (
 
 	"github.com/V-Ader/Loyality_GO/api/handler"
 	"github.com/V-Ader/Loyality_GO/api/resource/card"
+	"github.com/V-Ader/Loyality_GO/api/resource/event"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/client"
 	"github.com/V-Ader/Loyality_GO/api/resource/issuer"
@@ -58,6 +59,17 @@ func New() *gin.Engine {
 		cardGroup.PUT("/:id", handler.Put(cardService, dbConnection))
 		cardGroup.PATCH("/:id", handler.Patch(cardService, dbConnection))
 		cardGroup.DELETE("/:id", handler.Delete(cardService, dbConnection))
+	}
+
+	eventService := &event.EventService{}
+	eventGroup := router.Group("events")
+	{
+		eventGroup.GET("", handler.GetAll(eventService, dbConnection))
+		eventGroup.GET("/:id", handler.Get(eventService, dbConnection))
+		eventGroup.POST("/", handler.Post(eventService, dbConnection))
+		eventGroup.PUT("/:id", handler.Put(eventService, dbConnection))
+		eventGroup.PATCH("/:id", handler.Patch(eventService, dbConnection))
+		eventGroup.DELETE("/:id", handler.Delete(eventService, dbConnection))
 	}
 
 	tokenGroup := router.Group("tokens")

@@ -61,4 +61,13 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     INSERT INTO cards (id, issuer_id, owner_id, active, usages, capacity)
     VALUES (nextval('card_seq'), 1, 2, TRUE, 2, 10);
 
+    CREATE SEQUENCE event_seq START 1;
+
+    CREATE TABLE events (
+        id serial PRIMARY KEY,
+        card_id integer NOT NULL,
+        timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        quantity integer NOT NULL
+    );
+
 EOSQL
