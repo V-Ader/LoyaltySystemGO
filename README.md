@@ -27,6 +27,8 @@ docker compose up --build
 ## Usage
 You can import file __Loyality.postman_collection.json__ into Postman to use predefined test requests. 
 
+By default service will be avaible on port __:8080__
+
 # CRUD Table
 
 ## Clients
@@ -70,8 +72,6 @@ You can import file __Loyality.postman_collection.json__ into Postman to use pre
 | GET         | /events     | Get all events           |
 | GET         | /events/:id | Get a specific event by ID |
 | POST        | /events/    | Create a new event       |
-| PUT         | /events/:id | Update a event by ID     |
-| PATCH       | /events/:id | Partially update a event by ID |
 | DELETE      | /events/:id | Delete a event by ID     |
 
 
