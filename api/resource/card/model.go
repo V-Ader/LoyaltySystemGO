@@ -11,7 +11,7 @@ type Card struct {
 	Issuer_id int  `json:"issuer_id"`
 	Owner_id  int  `json:"owner_id"`
 	Active    bool `json:"active"`
-	Usages    int  `json:"usages"`
+	Tokens    int  `json:"tokens"`
 	Capacity  int  `json:"capacity"`
 }
 
@@ -23,7 +23,7 @@ type CardDataRequest struct {
 	Issuer_id int  `json:"issuer_id"`
 	Owner_id  int  `json:"owner_id"`
 	Active    bool `json:"active"`
-	Usages    int  `json:"usages"`
+	Tokens    int  `json:"tokens"`
 	Capacity  int  `json:"capacity"`
 }
 
@@ -31,6 +31,6 @@ type CardPatchRequest struct {
 	Issuer_id *int  `json:"issuer_id,omitempty"`
 	Owner_id  *int  `json:"owner_id,omitempty"`
 	Active    *bool `json:"active,omitempty"`
-	Usages    *int  `json:"usages,omitempty"`
+	Tokens    *int  `json:"tokens,omitempty"`
 	Capacity  *int  `json:"capacity,omitempty"`
 }
