@@ -51,14 +51,14 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
         issuer_id integer NOT NULL,
         owner_id integer NOT NULL,
         active boolean NOT NULL,
-        usages integer NOT NULL,
+        tokens integer NOT NULL,
         capacity integer NOT NULL
     );
 
-    INSERT INTO cards (id, issuer_id, owner_id, active, usages, capacity)
+    INSERT INTO cards (id, issuer_id, owner_id, active, tokens, capacity)
     VALUES (nextval('card_seq'), 1, 1, TRUE, 10, 15);
 
-    INSERT INTO cards (id, issuer_id, owner_id, active, usages, capacity)
+    INSERT INTO cards (id, issuer_id, owner_id, active, tokens, capacity)
     VALUES (nextval('card_seq'), 1, 2, TRUE, 2, 10);
 
     CREATE SEQUENCE event_seq START 1;

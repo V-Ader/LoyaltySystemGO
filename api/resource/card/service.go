@@ -42,7 +42,7 @@ func (s *CardService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]c
 	cards := []common.Entity{}
 	for results.Next() {
 		var card Card
-		err = results.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Usages, &card.Capacity)
+		err = results.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Tokens, &card.Capacity)
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func (s *CardService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) 
 	row := dbConnection.QueryRow(query, id)
 
 	var card Card
-	err := row.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Usages, &card.Capacity)
+	err := row.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Tokens, &card.Capacity)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("card not found")
@@ -75,8 +75,8 @@ func (s *CardService) ExecutePost(dbConnection *sql.DB, context *gin.Context) er
 		return err
 	}
 
-	query := "INSERT INTO cards (id, issuer_id, owner_id, active, usages, capacity) VALUES (nextval('card_seq'), $1, $2, $3, $4, $5)"
-	_, err := dbConnection.Exec(query, cardData.Issuer_id, cardData.Owner_id, cardData.Active, cardData.Usages, cardData.Capacity)
+	query := "INSERT INTO cards (id, issuer_id, owner_id, active, tokens, capacity) VALUES (nextval('card_seq'), $1, $2, $3, $4, $5)"
+	_, err := dbConnection.Exec(query, cardData.Issuer_id, cardData.Owner_id, cardData.Active, cardData.Tokens, cardData.Capacity)
 	return err
 }
 
@@ -92,7 +92,7 @@ func (s *CardService) ExecutePut(dbConnection *sql.DB, context *gin.Context) err
 		"issuer_id": cardUpdate.Issuer_id,
 		"owner_id":  cardUpdate.Owner_id,
 		"active":    cardUpdate.Active,
-		"usages":    cardUpdate.Usages,
+		"tokens":    cardUpdate.Tokens,
 		"capacity":  cardUpdate.Capacity,
 	}
 
@@ -120,8 +120,8 @@ func (s *CardService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) e
 	if cardPatch.Active != nil {
 		updates["active"] = *cardPatch.Active
 	}
-	if cardPatch.Usages != nil {
-		updates["usages"] = *cardPatch.Usages
+	if cardPatch.Tokens != nil {
+		updates["tokens"] = *cardPatch.Tokens
 	}
 	if cardPatch.Capacity != nil {
 		updates["capacity"] = *cardPatch.Capacity
