@@ -14,4 +14,6 @@ type Service interface {
 	ExecutePut(dbConnection *sql.DB, context *gin.Context) error
 	ExecutePatch(dbConnection *sql.DB, context *gin.Context) error
 	ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error
+	TransactionLock()
+	TransactionUnLock()
 }

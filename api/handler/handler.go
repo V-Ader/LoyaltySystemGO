@@ -81,6 +81,8 @@ func CheckIfMatch(context *gin.Context, entity common.Entity) bool {
 }
 
 func Put(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
+	service.TransactionLock()
+	defer service.TransactionUnLock()
 	return func(context *gin.Context) {
 		entity, err := service.ExecutGetById(dbConnection, context)
 		if err != nil {

@@ -5,13 +5,24 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
 )
 
-type ClientService struct{}
+type ClientService struct {
+	transactionMutex sync.Mutex
+}
+
+func (s *ClientService) TransactionLock() {
+	s.transactionMutex.Lock()
+}
+
+func (s *ClientService) TransactionUnLock() {
+	s.transactionMutex.Unlock()
+}
 
 func extractPagination(context *gin.Context) (int, int) {
 	page, _ := strconv.Atoi(context.DefaultQuery("page", "1"))

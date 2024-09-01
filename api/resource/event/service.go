@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/V-Ader/Loyality_GO/api/resource/card"
@@ -13,7 +14,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type EventService struct{}
+type EventService struct {
+	transactionMutex sync.Mutex
+}
+
+func (s *EventService) TransactionLock() {
+	s.transactionMutex.Lock()
+}
+
+func (s *EventService) TransactionUnLock() {
+	s.transactionMutex.Unlock()
+}
 
 func extractPagination(context *gin.Context) (int, int) {
 	page, _ := strconv.Atoi(context.DefaultQuery("page", "1"))
