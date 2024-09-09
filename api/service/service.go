@@ -8,12 +8,12 @@ import (
 )
 
 type Service interface {
-	ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error)
-	ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error)
-	ExecutePost(dbConnection *sql.DB, context *gin.Context) error
-	ExecutePut(dbConnection *sql.DB, context *gin.Context) error
-	ExecutePatch(dbConnection *sql.DB, context *gin.Context) error
-	ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error
+	ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, *common.RequestError)
+	ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, *common.RequestError)
+	ExecutePost(dbConnection *sql.DB, context *gin.Context) *common.RequestError
+	ExecutePut(dbConnection *sql.DB, context *gin.Context) *common.RequestError
+	ExecutePatch(dbConnection *sql.DB, context *gin.Context) *common.RequestError
+	ExecuteDelete(dbConnection *sql.DB, context *gin.Context) *common.RequestError
 	TransactionLock()
 	TransactionUnLock()
 }

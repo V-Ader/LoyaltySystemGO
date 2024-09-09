@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
 
@@ -30,7 +31,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func (s *CardService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
+func (s *CardService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, *common.RequestError) {
 	var query string
 	var args []interface{}
 
@@ -46,7 +47,7 @@ func (s *CardService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]c
 
 	results, err := dbConnection.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusNotFound, Err: err}
 	}
 	defer results.Close()
 
@@ -55,14 +56,14 @@ func (s *CardService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]c
 		var card Card
 		err = results.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Tokens, &card.Capacity)
 		if err != nil {
-			return nil, err
+			return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 		}
 		cards = append(cards, &card)
 	}
 	return cards, nil
 }
 
-func (s *CardService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
+func (s *CardService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, *common.RequestError) {
 	id := context.Param("id")
 	query := "SELECT * FROM cards WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -71,32 +72,35 @@ func (s *CardService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) 
 	err := row.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Tokens, &card.Capacity)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("card not found")
+			return nil, &common.RequestError{StatusCode: http.StatusBadRequest, Err: fmt.Errorf("card not found")}
 		}
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
 	return &card, nil
 }
 
-func (s *CardService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecutePost(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	var cardData CardDataRequest
 
 	if err := context.BindJSON(&cardData); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	query := "INSERT INTO cards (id, issuer_id, owner_id, active, tokens, capacity) VALUES (nextval('card_seq'), $1, $2, $3, $4, $5)"
 	_, err := dbConnection.Exec(query, cardData.Issuer_id, cardData.Owner_id, cardData.Active, cardData.Tokens, cardData.Capacity)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
+	}
+	return nil
 }
 
-func (s *CardService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecutePut(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	id := context.Param("id")
 	var cardUpdate CardDataRequest
 
 	if err := context.BindJSON(&cardUpdate); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	updates := map[string]interface{}{
@@ -110,15 +114,18 @@ func (s *CardService) ExecutePut(dbConnection *sql.DB, context *gin.Context) err
 	query, args := database.BuildUpsertQuery("cards", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
 
-func (s *CardService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	id := context.Param("id")
 	var cardPatch CardPatchRequest
 
 	if err := context.BindJSON(&cardPatch); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	updates := map[string]interface{}{}
@@ -139,17 +146,23 @@ func (s *CardService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) e
 	}
 
 	if len(updates) == 0 {
-		return errors.New("no fields provided for update")
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: errors.New("no fields provided for update")}
 	}
 
 	query, args := database.BuildUpdateQuery("cards", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
 
-func (s *CardService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *CardService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	query := "DELETE FROM cards where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }

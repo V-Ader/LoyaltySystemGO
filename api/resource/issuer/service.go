@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
 
@@ -40,7 +41,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func (s *IssuerService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
+func (s *IssuerService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, *common.RequestError) {
 	var query string
 	var args []interface{}
 
@@ -56,7 +57,7 @@ func (s *IssuerService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([
 
 	results, err := dbConnection.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusNotFound, Err: err}
 	}
 	defer results.Close()
 
@@ -65,14 +66,14 @@ func (s *IssuerService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([
 		var issuer Issuer
 		err = results.Scan(&issuer.Id, &issuer.Name)
 		if err != nil {
-			return nil, err
+			return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 		}
 		issuers = append(issuers, &issuer)
 	}
 	return issuers, nil
 }
 
-func (s *IssuerService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
+func (s *IssuerService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, *common.RequestError) {
 	id := context.Param("id")
 	query := "SELECT id, name FROM issuers WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -81,32 +82,35 @@ func (s *IssuerService) ExecutGetById(dbConnection *sql.DB, context *gin.Context
 	err := row.Scan(&issuer.Id, &issuer.Name)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("issuer not found")
+			return nil, &common.RequestError{StatusCode: http.StatusBadRequest, Err: fmt.Errorf("issuer not found")}
 		}
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
 	return &issuer, nil
 }
 
-func (s *IssuerService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecutePost(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	var issuerData IssuerDataRequest
 
 	if err := context.BindJSON(&issuerData); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	query := "INSERT INTO issuers (id, name) VALUES (nextval('issuer_seq'), $1)"
 	_, err := dbConnection.Exec(query, issuerData.Name)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
+	}
+	return nil
 }
 
-func (s *IssuerService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecutePut(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	id := context.Param("id")
 	var issuerData IssuerDataRequest
 
 	if err := context.BindJSON(&issuerData); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	updates := map[string]interface{}{
@@ -116,15 +120,18 @@ func (s *IssuerService) ExecutePut(dbConnection *sql.DB, context *gin.Context) e
 	query, args := database.BuildUpsertQuery("issuers", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
 
-func (s *IssuerService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	id := context.Param("id")
 	var issuerData IssuerPatchRequest
 
 	if err := context.BindJSON(&issuerData); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	updates := map[string]interface{}{}
@@ -133,17 +140,23 @@ func (s *IssuerService) ExecutePatch(dbConnection *sql.DB, context *gin.Context)
 	}
 
 	if len(updates) == 0 {
-		return errors.New("no fields provided for update")
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: errors.New("no fields provided for update")}
 	}
 
 	query, args := database.BuildUpdateQuery("issuers", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
 
-func (s *IssuerService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *IssuerService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	query := "DELETE FROM issuers where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }

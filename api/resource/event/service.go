@@ -15,7 +15,8 @@ import (
 )
 
 type EventService struct {
-	transactionMutex sync.Mutex
+	transactionMutex    sync.Mutex
+	CardServiceinstance *card.CardService
 }
 
 func (s *EventService) TransactionLock() {
@@ -32,7 +33,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func (s *EventService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
+func (s *EventService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, *common.RequestError) {
 	var query string
 	var args []interface{}
 
@@ -48,7 +49,7 @@ func (s *EventService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]
 
 	results, err := dbConnection.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusNotFound, Err: err}
 	}
 	defer results.Close()
 
@@ -57,14 +58,14 @@ func (s *EventService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]
 		var event Event
 		err = results.Scan(&event.Id, &event.Card_id, &event.Timestamp, &event.Quantity)
 		if err != nil {
-			return nil, err
+			return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 		}
 		entities = append(entities, &event)
 	}
 	return entities, nil
 }
 
-func (s *EventService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
+func (s *EventService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, *common.RequestError) {
 	id := context.Param("id")
 	query := "SELECT * FROM events WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -73,9 +74,9 @@ func (s *EventService) ExecutGetById(dbConnection *sql.DB, context *gin.Context)
 	err := row.Scan(&event.Id, &event.Card_id, &event.Timestamp, &event.Quantity)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("event not found")
+			return nil, &common.RequestError{StatusCode: http.StatusBadRequest, Err: fmt.Errorf("event not found")}
 		}
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
 	return &event, nil
@@ -92,54 +93,61 @@ func CreateTestContext(jsonBody string, paramID string) *gin.Context {
 	return c
 }
 
-func (s *EventService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *EventService) ExecutePost(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	var eventData EventDataRequest
 
 	if err := context.BindJSON(&eventData); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
-	//check if can add event
-	cardService := card.CardService{}
-	ctx := CreateTestContext("", fmt.Sprintf("%d", eventData.Card_id))
 
-	entity, err := cardService.ExecutGetById(dbConnection, ctx)
+	ctx := CreateTestContext("", fmt.Sprintf("%d", eventData.Card_id))
+	s.CardServiceinstance.TransactionLock()
+	defer s.CardServiceinstance.TransactionUnLock()
+
+	entity, err := s.CardServiceinstance.ExecutGetById(dbConnection, ctx)
 	if err != nil {
 		return err
 	}
 	card, ok := entity.(*card.Card)
 	if !ok {
-		return fmt.Errorf("could not process the card of id %d", eventData.Card_id)
+		return &common.RequestError{StatusCode: http.StatusUnprocessableEntity, Err: fmt.Errorf("could not process the card of id %d", eventData.Card_id)}
 	}
 
 	if card.Tokens < eventData.Quantity {
-		return fmt.Errorf("not enough tokens on card %d", eventData.Card_id)
+		return &common.RequestError{StatusCode: http.StatusUnprocessableEntity, Err: fmt.Errorf("not enough tokens on card %d", eventData.Card_id)}
 	}
 
 	//recude quantity
 	body := fmt.Sprintf("{\n\"tokens\": %d\n}", card.Tokens-eventData.Quantity)
 	ctx = CreateTestContext(body, fmt.Sprintf("%d", eventData.Card_id))
 
-	err = cardService.ExecutePatch(dbConnection, ctx)
-	if err != nil {
-		return err
+	patchErr := s.CardServiceinstance.ExecutePatch(dbConnection, ctx)
+	if patchErr != nil {
+		return patchErr
 	}
 
 	//add event
 	query := "INSERT INTO events (id, card_id, timestamp, quantity) VALUES (nextval('event_seq'), $1, $2, $3)"
-	_, err = dbConnection.Exec(query, eventData.Card_id, time.Now(), eventData.Quantity)
-	return err
+	_, execErr := dbConnection.Exec(query, eventData.Card_id, time.Now(), eventData.Quantity)
+	if execErr != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: execErr}
+	}
+	return nil
 }
 
-func (s *EventService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
-	return fmt.Errorf("PUT method is forbidden")
+func (s *EventService) ExecutePut(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
+	return &common.RequestError{StatusCode: http.StatusForbidden, Err: fmt.Errorf("PUT method is forbidden")}
 }
 
-func (s *EventService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
-	return fmt.Errorf("PATCH method is forbidden")
+func (s *EventService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
+	return &common.RequestError{StatusCode: http.StatusForbidden, Err: fmt.Errorf("PUT method is forbidden")}
 }
 
-func (s *EventService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *EventService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	query := "DELETE FROM events where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }

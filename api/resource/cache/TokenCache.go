@@ -4,10 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
-	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	mapset "github.com/deckarep/golang-set"
 )
 
@@ -32,7 +33,6 @@ func (tc *TokenCache) CreateToken() (string, error) {
 	}
 
 	tc.cache.Add(token)
-	fmt.Printf("Token %s added\n", token)
 	return token, nil
 }
 
@@ -51,17 +51,14 @@ func generateUniqueToken(tc *TokenCache) (string, error) {
 	return token, nil
 }
 
-func (tc *TokenCache) RemoveToken(token string) error {
+func (tc *TokenCache) RemoveToken(token string) *common.RequestError {
 	tc.mutex.Lock()
 	defer tc.mutex.Unlock()
 
 	if !tc.cache.Contains(token) {
-		return errors.New("token not found in cache")
+		return &common.RequestError{StatusCode: http.StatusNotFound, Err: errors.New("token not found")}
 	}
-
 	tc.cache.Remove(token)
-	fmt.Printf("Token %s removed\n", token)
-
 	return nil
 }
 

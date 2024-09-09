@@ -61,7 +61,9 @@ func New() *gin.Engine {
 		cardGroup.DELETE("/:id", handler.Delete(cardService, dbConnection))
 	}
 
-	eventService := &event.EventService{}
+	eventService := &event.EventService{
+		CardServiceinstance: cardService,
+	}
 	eventGroup := router.Group("events")
 	{
 		eventGroup.GET("", handler.GetAll(eventService, dbConnection))

@@ -36,7 +36,7 @@ func GetAll(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		users, err := service.ExecutGet(dbConnection, context)
 		if err != nil {
-			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 		} else {
 			context.JSON(http.StatusOK, response.Response{Data: users})
 		}
@@ -47,11 +47,7 @@ func Get(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		result, err := service.ExecutGetById(dbConnection, context)
 		if err != nil {
-			if err.Error() == "record not found" {
-				context.JSON(http.StatusNotFound, response.ErrorResponse{Message: err.Error()})
-			} else {
-				context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
-			}
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 		} else {
 			context.Header("ETag", result.GetHash())
 			context.JSON(http.StatusOK, response.Response{Data: &result})
@@ -63,14 +59,14 @@ func Post(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		err := tokenCache.RemoveToken(context.Query("token"))
 		if err != nil {
-			context.JSON(http.StatusPreconditionFailed, response.ErrorResponse{Message: "ivalid token provided"})
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 			return
 		}
 		err = service.ExecutePost(dbConnection, context)
 		if err != nil {
-			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 		} else {
-			context.Status(http.StatusOK)
+			context.Status(http.StatusCreated)
 		}
 	}
 }
@@ -81,12 +77,13 @@ func CheckIfMatch(context *gin.Context, entity common.Entity) bool {
 }
 
 func Put(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
-	service.TransactionLock()
-	defer service.TransactionUnLock()
 	return func(context *gin.Context) {
+		service.TransactionLock()
+		defer service.TransactionUnLock()
+
 		entity, err := service.ExecutGetById(dbConnection, context)
 		if err != nil {
-			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 			return
 		}
 
@@ -97,21 +94,24 @@ func Put(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 
 		err = service.ExecutePut(dbConnection, context)
 		if err != nil {
-			context.JSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 			return
 		}
 
-		context.Status(http.StatusOK)
+		context.Status(http.StatusNoContent)
 	}
 }
 
 func Patch(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
+		service.TransactionLock()
+		defer service.TransactionUnLock()
+
 		err := service.ExecutePatch(dbConnection, context)
 		if err != nil {
-			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			context.IndentedJSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 		} else {
-			context.Status(http.StatusOK)
+			context.Status(http.StatusNoContent)
 		}
 	}
 }
@@ -120,7 +120,7 @@ func Delete(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		err := service.ExecuteDelete(dbConnection, context)
 		if err != nil {
-			context.IndentedJSON(http.StatusInternalServerError, response.ErrorResponse{Message: err.Error()})
+			context.IndentedJSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
 		} else {
 			context.Status(http.StatusOK)
 		}

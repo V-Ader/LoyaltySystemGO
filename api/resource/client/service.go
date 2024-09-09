@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"sync"
 
@@ -30,7 +31,7 @@ func extractPagination(context *gin.Context) (int, int) {
 	return page, pageSize
 }
 
-func (s *ClientService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, error) {
+func (s *ClientService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, *common.RequestError) {
 	var query string
 	var args []interface{}
 
@@ -46,7 +47,7 @@ func (s *ClientService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([
 
 	results, err := dbConnection.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusNotFound, Err: err}
 	}
 	defer results.Close()
 
@@ -55,14 +56,14 @@ func (s *ClientService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([
 		var client Client
 		err = results.Scan(&client.Id, &client.Name, &client.Email)
 		if err != nil {
-			return nil, err
+			return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 		}
 		clients = append(clients, &client)
 	}
 	return clients, nil
 }
 
-func (s *ClientService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, error) {
+func (s *ClientService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, *common.RequestError) {
 	id := context.Param("id")
 	query := "SELECT id, name, email FROM clients WHERE id = $1"
 	row := dbConnection.QueryRow(query, id)
@@ -71,32 +72,35 @@ func (s *ClientService) ExecutGetById(dbConnection *sql.DB, context *gin.Context
 	err := row.Scan(&client.Id, &client.Name, &client.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("client not found")
+			return nil, &common.RequestError{StatusCode: http.StatusBadRequest, Err: fmt.Errorf("client not found")}
 		}
-		return nil, err
+		return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
 	}
 
 	return &client, nil
 }
 
-func (s *ClientService) ExecutePost(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecutePost(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	var clientData ClientDataRequest
 
 	if err := context.BindJSON(&clientData); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	query := "INSERT INTO clients (id, name, email) VALUES (nextval('client_seq'), $1, $2)"
 	_, err := dbConnection.Exec(query, clientData.Name, clientData.Email)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
+	}
+	return nil
 }
 
-func (s *ClientService) ExecutePut(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecutePut(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	id := context.Param("id")
 	var clientUpdate ClientDataRequest
 
 	if err := context.BindJSON(&clientUpdate); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	updates := map[string]interface{}{
@@ -107,15 +111,18 @@ func (s *ClientService) ExecutePut(dbConnection *sql.DB, context *gin.Context) e
 	query, args := database.BuildUpsertQuery("clients", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
 
-func (s *ClientService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecutePatch(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	id := context.Param("id")
 	var clientPatch ClientPatchRequest
 
 	if err := context.BindJSON(&clientPatch); err != nil {
-		return err
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: err}
 	}
 
 	updates := map[string]interface{}{}
@@ -127,17 +134,23 @@ func (s *ClientService) ExecutePatch(dbConnection *sql.DB, context *gin.Context)
 	}
 
 	if len(updates) == 0 {
-		return errors.New("no fields provided for update")
+		return &common.RequestError{StatusCode: http.StatusBadRequest, Err: errors.New("no fields provided for update")}
 	}
 
 	query, args := database.BuildUpdateQuery("clients", updates, id)
 
 	_, err := dbConnection.Exec(query, args...)
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
 
-func (s *ClientService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) error {
+func (s *ClientService) ExecuteDelete(dbConnection *sql.DB, context *gin.Context) *common.RequestError {
 	query := "DELETE FROM clients where id = $1"
 	_, err := dbConnection.Exec(query, context.Param("id"))
-	return err
+	if err != nil {
+		return &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+	}
+	return nil
 }
