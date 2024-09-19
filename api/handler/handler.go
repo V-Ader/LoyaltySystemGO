@@ -32,6 +32,19 @@ func Token(dbConnection *sql.DB) gin.HandlerFunc {
 	}
 }
 
+type dbFunctionProcessing func(*sql.DB, *gin.Context) ([]common.Entity, *common.RequestError)
+
+func Execute(executeFunction dbFunctionProcessing, dbConnection *sql.DB) gin.HandlerFunc {
+	return func(context *gin.Context) {
+		users, err := executeFunction(dbConnection, context)
+		if err != nil {
+			context.JSON(err.StatusCode, response.ErrorResponse{Message: err.Err.Error()})
+		} else {
+			context.JSON(http.StatusOK, response.Response{Data: users})
+		}
+	}
+}
+
 func GetAll(service service.Service, dbConnection *sql.DB) gin.HandlerFunc {
 	return func(context *gin.Context) {
 		users, err := service.ExecutGet(dbConnection, context)

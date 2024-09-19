@@ -28,28 +28,6 @@ func New() *gin.Engine {
 		return nil
 	}
 
-	clientService := &client.ClientService{}
-	clientGroup := router.Group("clients")
-	{
-		clientGroup.GET("", handler.GetAll(clientService, dbConnection))
-		clientGroup.GET("/:id", handler.Get(clientService, dbConnection))
-		clientGroup.POST("/", handler.Post(clientService, dbConnection))
-		clientGroup.PUT("/:id", handler.Put(clientService, dbConnection))
-		clientGroup.PATCH("/:id", handler.Patch(clientService, dbConnection))
-		clientGroup.DELETE("/:id", handler.Delete(clientService, dbConnection))
-	}
-
-	IssuerService := &issuer.IssuerService{}
-	issuerGroup := router.Group("issuers")
-	{
-		issuerGroup.GET("", handler.GetAll(IssuerService, dbConnection))
-		issuerGroup.GET("/:id", handler.Get(IssuerService, dbConnection))
-		issuerGroup.POST("/", handler.Post(IssuerService, dbConnection))
-		issuerGroup.PUT("/:id", handler.Put(IssuerService, dbConnection))
-		issuerGroup.PATCH("/:id", handler.Patch(IssuerService, dbConnection))
-		issuerGroup.DELETE("/:id", handler.Delete(IssuerService, dbConnection))
-	}
-
 	cardService := &card.CardService{}
 	cardGroup := router.Group("cards")
 	{
@@ -72,6 +50,29 @@ func New() *gin.Engine {
 		eventGroup.PUT("/:id", handler.Put(eventService, dbConnection))
 		eventGroup.PATCH("/:id", handler.Patch(eventService, dbConnection))
 		eventGroup.DELETE("/:id", handler.Delete(eventService, dbConnection))
+	}
+
+	clientService := &client.ClientService{}
+	clientGroup := router.Group("clients")
+	{
+		clientGroup.GET("", handler.GetAll(clientService, dbConnection))
+		clientGroup.GET("/:id", handler.Get(clientService, dbConnection))
+		clientGroup.GET("/:id/cards", handler.Execute(clientService.ExecutGetCards, dbConnection))
+		clientGroup.POST("/", handler.Post(clientService, dbConnection))
+		clientGroup.PUT("/:id", handler.Put(clientService, dbConnection))
+		clientGroup.PATCH("/:id", handler.Patch(clientService, dbConnection))
+		clientGroup.DELETE("/:id", handler.Delete(clientService, dbConnection))
+	}
+
+	IssuerService := &issuer.IssuerService{}
+	issuerGroup := router.Group("issuers")
+	{
+		issuerGroup.GET("", handler.GetAll(IssuerService, dbConnection))
+		issuerGroup.GET("/:id", handler.Get(IssuerService, dbConnection))
+		issuerGroup.POST("/", handler.Post(IssuerService, dbConnection))
+		issuerGroup.PUT("/:id", handler.Put(IssuerService, dbConnection))
+		issuerGroup.PATCH("/:id", handler.Patch(IssuerService, dbConnection))
+		issuerGroup.DELETE("/:id", handler.Delete(IssuerService, dbConnection))
 	}
 
 	tokenGroup := router.Group("tokens")

@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/V-Ader/Loyality_GO/api/resource/card"
 	"github.com/V-Ader/Loyality_GO/api/resource/common"
 	"github.com/V-Ader/Loyality_GO/database"
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,40 @@ func (s *ClientService) ExecutGet(dbConnection *sql.DB, context *gin.Context) ([
 		clients = append(clients, &client)
 	}
 	return clients, nil
+}
+
+func (s *ClientService) ExecutGetCards(dbConnection *sql.DB, context *gin.Context) ([]common.Entity, *common.RequestError) {
+	var query string
+	var args []interface{}
+
+	page, pageSize := extractPagination(context)
+	id := context.Param("id")
+
+	if page > 0 && pageSize > 0 {
+		offset := (page - 1) * pageSize
+		query = "SELECT * FROM cards WHERE owner_id = $1 ORDER BY id LIMIT $2 OFFSET $3"
+		args = []interface{}{id, pageSize, offset}
+	} else {
+		query = "SELECT * FROM cards WHERE owner_id = $1 ORDER BY id"
+		args = []interface{}{id}
+	}
+
+	results, err := dbConnection.Query(query, args...)
+	if err != nil {
+		return nil, &common.RequestError{StatusCode: http.StatusNotFound, Err: err}
+	}
+	defer results.Close()
+
+	cards := []common.Entity{}
+	for results.Next() {
+		var card card.Card
+		err = results.Scan(&card.Id, &card.Issuer_id, &card.Owner_id, &card.Active, &card.Tokens, &card.Capacity)
+		if err != nil {
+			return nil, &common.RequestError{StatusCode: http.StatusInternalServerError, Err: err}
+		}
+		cards = append(cards, &card)
+	}
+	return cards, nil
 }
 
 func (s *ClientService) ExecutGetById(dbConnection *sql.DB, context *gin.Context) (common.Entity, *common.RequestError) {
