@@ -22,18 +22,27 @@
 							"port": "8080",
 							"path": [
 								"clients"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getClientsCards",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/clients/1/cards",
+							"protocol": "http",
+							"host": [
+								"localhost"
 							],
-							"query": [
-								{
-									"key": "asd",
-									"value": null,
-									"disabled": true
-								},
-								{
-									"key": "asd",
-									"value": null,
-									"disabled": true
-								}
+							"port": "8080",
+							"path": [
+								"clients",
+								"1",
+								"cards"
 							]
 						}
 					},
@@ -203,7 +212,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8080/cards",
+							"raw": "http://localhost:8080/cards?page=1&pageSize=2",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -214,14 +223,12 @@
 							],
 							"query": [
 								{
-									"key": "asd",
-									"value": null,
-									"disabled": true
+									"key": "page",
+									"value": "1"
 								},
 								{
-									"key": "asd",
-									"value": null,
-									"disabled": true
+									"key": "pageSize",
+									"value": "2"
 								}
 							]
 						}
@@ -255,10 +262,10 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"issuer_id\": 1,\r\n    \"owner_id\": 2,\r\n    \"active\": true,\r\n    \"usages\": 10,\r\n    \"capacity\": 20\r\n}"
+							"raw": "{\r\n    \"issuer_id\": 1,\r\n    \"owner_id\": 1,\r\n    \"active\": true,\r\n    \"tokens\": 10,\r\n    \"capacity\": 10\r\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/cards/?token=a4ed52b2cadbe35b10c12f6591979609",
+							"raw": "http://localhost:8080/cards/?token=cffcff71ffe5265999a099c3f9894049",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -271,7 +278,7 @@
 							"query": [
 								{
 									"key": "token",
-									"value": "a4ed52b2cadbe35b10c12f6591979609"
+									"value": "cffcff71ffe5265999a099c3f9894049"
 								}
 							]
 						}
@@ -305,13 +312,13 @@
 						"header": [
 							{
 								"key": "If-Match",
-								"value": "1775ed506f128ddf5f84f9e3a61f3b728a9e6bf80cd5421769fa7e032164aa12",
+								"value": "8727a92f56bb4c5197c800c28534e883e3ce74be65f1e6948fc3017f75883e7d",
 								"type": "default"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"capacity\": 200\r\n}",
+							"raw": "{\r\n    \"capacity\": 400\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -426,10 +433,10 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"card_id\": 1,\r\n    \"quantity\": 2\r\n}"
+							"raw": "{\r\n    \"card_id\": 3,\r\n    \"quantity\": 2\r\n}"
 						},
 						"url": {
-							"raw": "http://localhost:8080/events/?token=4be83ca16b3e2d459c9469a36daf5c38",
+							"raw": "http://localhost:8080/events/?token=5e6b637d70c8d88ad262bac13820fd7b",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -442,7 +449,7 @@
 							"query": [
 								{
 									"key": "token",
-									"value": "4be83ca16b3e2d459c9469a36daf5c38"
+									"value": "5e6b637d70c8d88ad262bac13820fd7b"
 								}
 							]
 						}
@@ -476,13 +483,13 @@
 						"header": [
 							{
 								"key": "If-Match",
-								"value": "1775ed506f128ddf5f84f9e3a61f3b728a9e6bf80cd5421769fa7e032164aa12",
+								"value": "e3b57882d0801c44159e5b97325b00c98a8142a56431172f944e1e1bed2ec281",
 								"type": "default"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"quantity\": 20\r\n}",
+							"raw": "{\r\n    \"quantity\": 1\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -490,15 +497,15 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8080/event/1",
+							"raw": "http://localhost:8080/events/2",
 							"protocol": "http",
 							"host": [
 								"localhost"
 							],
 							"port": "8080",
 							"path": [
-								"event",
-								"1"
+								"events",
+								"2"
 							]
 						}
 					},

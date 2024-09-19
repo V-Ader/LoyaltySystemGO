@@ -37,6 +37,7 @@ By default service will be avaible on port __:8080__
 |-------------|--------------|---------------------------|
 | GET         | /clients     | Get all clients           |
 | GET         | /clients/:id | Get a specific client by ID |
+| GET         | /clients/:id/cards | Get all client's cards |
 | POST        | /clients/    | Create a new client       |
 | PUT         | /clients/:id | Update a client by ID     |
 | PATCH       | /clients/:id | Partially update a client by ID |
